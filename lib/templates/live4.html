@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        :root {
+            --primary: #FF6699;
+            --primary-rgb: 255, 102, 153;
+            --bg-color: #121212;
+        }
+        body {
+            margin: 0;
+            padding: 40px;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: #fff;
+            min-width: max-content;
+        }
+        .container {
+            position: relative;
+            {{- if eq .Options.View 1}}
+            width: {{if .QRBase64}}600px{{else}}500px{{end}};
+            {{- else}}
+            width: {{if .QRBase64}}1050px{{else}}850px{{end}};
+            {{- end}}
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+        .bg-blur {
+            position: absolute;
+            top: -30px; left: -30px; right: -30px; bottom: -30px;
+            background-image: url('{{.CoverBase64}}');
+            background-size: cover;
+            background-position: center;
+            filter: blur(25px) brightness(0.3);
+            z-index: 0;
+        }
+        .content {
+            position: relative;
+            z-index: 1;
+            padding: 35px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: nowrap;
+            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            {{- if eq .Options.View 1}}
+            flex-direction: column;
+            align-items: center;
+            {{- end}}
+        }
+        .cover-box {
+            position: relative;
+            {{- if eq .Options.View 1}}
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            {{- else}}
+            width: 380px;
+            height: 214px;
+            {{- end}}
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border: 2px solid rgba(var(--primary-rgb), 0.4);
+            flex-shrink: 0;
+        }
+        .cover-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+        .cover-box.is-offline .cover-img {
+            filter: brightness(0.5) saturate(0.6);
+        }
+        .cover-box.is-offline::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.10);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+        .live-badge-overlay {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(90deg, #FF6699, #e5547f);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            box-shadow: 0 4px 15px rgba(255, 102, 153, 0.5);
+            text-transform: uppercase;
+        }
+        .info-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            {{- if eq .Options.View 1}}
+            width: 100%;
+            {{- end}}
+        }
+        .title {
+            font-size: 26px;
+            font-weight: bold;
+            line-height: 1.4;
+            margin: 0 0 20px 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            {{- if eq .Options.View 1}}
+            text-align: center;
+            {{- end}}
+        }
+        .author-box {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: auto;
+            {{- if eq .Options.View 1}}
+            justify-content: center;
+            {{- end}}
+        }
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4);
+            object-fit: cover;
+        }
+        .author-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .author-name {
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .room-id {
+            font-size: 14px;
+            color: #ccc;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            width: fit-content;
+            white-space: nowrap;
+        }
+        .stats-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0,0,0,0.4);
+            padding: 14px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-top: 15px;
+            flex-wrap: nowrap;
+            {{- if eq .Options.View 1}}
+            justify-content: center;
+            {{- end}}
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ddd;
+            font-size: 15px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .stat-item span {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+        {{- if eq .Options.View 1}}
+        .stats-row {
+            justify-content: center;
+            padding: 12px 16px;
+        }
+        .stat-item {
+            font-size: 13px;
+        }
+        .stat-item span {
+            font-size: 14px;
+        }
+        {{- end}}
+        .qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+            min-width: 130px;
+        }
+        .qr-img {
+            width: 90px;
+            height: 90px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .qr-text {
+            font-size: 13px;
+            color: #bbb;
+            font-weight: 500;
+        }
+        {{- if eq .Options.View 1}}
+        .info-qr-row {
+            display: flex;
+            gap: 16px;
+            align-items: stretch;
+            width: 100%;
+        }
+        .info-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .qr-inline {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+            min-width: 110px;
+            max-width: 130px;
+        }
+        .qr-inline .qr-img {
+            width: 72px;
+            height: 72px;
+            margin-bottom: 8px;
+        }
+        .qr-inline .qr-text {
+            font-size: 12px;
+            text-align: center;
+            line-height: 1.3;
+        }
+        {{- end}}
+        .footer {
+            margin-top: 24px;
+            text-align: right;
+            font-size: 14px;
+            color: #666;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 毛玻璃背景 -->
+        <div class="bg-blur"></div>
+
+        <div class="content">
+            {{- $order := split "1,2,3" ","}}
+            {{- if .Options.ModelOrder}}
+            {{- $order = split .Options.ModelOrder ","}}
+            {{- end}}
+            {{- range $order}}
+            {{- $code := trimSpace .}}
+            {{- if eq $code "1"}}
+            <!-- 封面 -->
+            <div class="cover-box{{if not $.IsLive}} is-offline{{end}}">
+                <img class="cover-img" src="{{$.CoverBase64}}" />
+                {{if $.IsLive}}
+                <div class="live-badge-overlay">正在直播</div>
+                {{else}}
+                <div class="live-badge-overlay" style="background: #555; box-shadow: none;">直播已结束</div>
+                {{end}}
+            </div>
+            {{- end}}
+            {{- if eq $code "2"}}
+            <!-- 信息 -->
+            {{- if eq $.Options.View 1}}
+            {{- /* 移动端：信息和二维码合并为一行 */ -}}
+            <div class="info-qr-row">
+                <div class="info-main">
+                    <h2 class="title">{{$.Info.Title}}</h2>
+                    <div class="author-box">
+                        <img class="avatar" src="{{$.AvatarBase64}}" />
+                        <div class="author-info">
+                            <div class="author-name">{{if $.Info.Nickname}}{{$.Info.Nickname}}{{else}}{{$.Info.Author}}{{end}}</div>
+                            <div class="room-id">Bilibili 房间号: {{$.Info.RoomID}}</div>
+                        </div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-item">
+                            分区: <span>{{$.Info.Category}}</span>
+                        </div>
+                        {{if $.IsLive}}
+                        <div class="stat-item">
+                            人气/粉丝: <span>{{$.Info.FollowerNum}}</span>
+                        </div>
+                        {{else}}
+                        <div class="stat-item">
+                            {{$.DurationLabel}} <span>{{$.Duration}}</span>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+                {{- if $.QRBase64}}
+                <div class="qr-inline">
+                    <img class="qr-img" src="{{$.QRBase64}}" />
+                    <div class="qr-text">扫码直达<br>直播间</div>
+                </div>
+                {{- end}}
+            </div>
+            {{- else}}
+            <div class="info-box">
+                <h2 class="title">{{$.Info.Title}}</h2>
+                <div class="author-box">
+                    <img class="avatar" src="{{$.AvatarBase64}}" />
+                    <div class="author-info">
+                        <div class="author-name">{{if $.Info.Nickname}}{{$.Info.Nickname}}{{else}}{{$.Info.Author}}{{end}}</div>
+                        <div class="room-id">Bilibili 房间号: {{$.Info.RoomID}}</div>
+                    </div>
+                </div>
+                <div class="stats-row">
+                    <div class="stat-item">
+                        分区: <span>{{$.Info.Category}}</span>
+                    </div>
+                    {{if $.IsLive}}
+                    <div class="stat-item">
+                        人气/粉丝: <span>{{$.Info.FollowerNum}}</span>
+                    </div>
+                    {{else}}
+                    <div class="stat-item">
+                        {{$.DurationLabel}} <span>{{$.Duration}}</span>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{- end}}
+            {{- end}}
+            {{- if and (eq $code "3") $.QRBase64 (ne $.Options.View 1)}}
+            <!-- 二维码 (仅桌面端独立区块) -->
+            <div class="qr-section">
+                <img class="qr-img" src="{{$.QRBase64}}" />
+                <div class="qr-text">扫码直达直播间</div>
+            </div>
+            {{- end}}
+            {{- end}}
+        </div>
+    </div>
+    <div class="footer">
+        DDScreen-Plugin By 小橙c | {{.GeneratedAt}}
+    </div>
+    {{- if .CoverBase64}}
+    <script>
+    (function() {
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = '{{.CoverBase64}}';
+        img.onload = function() {
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            canvas.width = 50;
+            canvas.height = 50;
+            ctx.drawImage(img, 0, 0, 50, 50);
+            var imageData = ctx.getImageData(0, 0, 50, 50).data;
+            var r = 0, g = 0, b = 0, totalWeight = 0;
+            for (var i = 0; i < imageData.length; i += 4) {
+                var alpha = imageData[i + 3];
+                if (alpha < 128) continue;
+                var pR = imageData[i], pG = imageData[i + 1], pB = imageData[i + 2];
+                var brightness = (pR * 299 + pG * 587 + pB * 114) / 1000;
+                if (brightness < 80 || brightness > 240) continue;
+                var max = Math.max(pR, pG, pB), min = Math.min(pR, pG, pB);
+                var sat = max === 0 ? 0 : ((max - min) / max) * 100;
+                if (sat < 25) continue;
+                var w = Math.pow(brightness / 255, 1.5) * Math.pow(sat / 100, 2);
+                r += pR * w; g += pG * w; b += pB * w;
+                totalWeight += w;
+            }
+            if (totalWeight === 0) {
+                r = 0; g = 0; b = 0; totalWeight = 0;
+                for (var j = 0; j < imageData.length; j += 4) {
+                    if (imageData[j + 3] < 128) continue;
+                    var br = (imageData[j] * 299 + imageData[j+1] * 587 + imageData[j+2] * 114) / 1000;
+                    if (br < 40 || br > 250) continue;
+                    r += imageData[j]; g += imageData[j+1]; b += imageData[j+2];
+                    totalWeight++;
+                }
+            }
+            if (totalWeight === 0) return;
+            r = Math.round(r / totalWeight);
+            g = Math.round(g / totalWeight);
+            b = Math.round(b / totalWeight);
+            var hex = '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            var dR = Math.max(0, r - 40), dG = Math.max(0, g - 40), dB = Math.max(0, b - 40);
+            var darkHex = '#' + ((1 << 24) + (dR << 16) + (dG << 8) + dB).toString(16).slice(1);
+            var root = document.documentElement;
+            root.style.setProperty('--primary', hex);
+            root.style.setProperty('--primary-rgb', r + ', ' + g + ', ' + b);
+            root.style.setProperty('--primary-dark', darkHex);
+        };
+    })();
+    </script>
+    {{- end}}
+</body>
+</html>

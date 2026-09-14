@@ -1,0 +1,811 @@
+/* =======================================================================
+   Live / Off 直播卡片样式（最终修正版）
+   变更要点：
+   - 移动端 dot 椭圆问题：强制正圆（aspect-ratio + inline-block + flex:0 0 auto）
+   - 移动端上播 dot 稍偏下：上抬 -0.5px
+   - 移动端下播 dot 过大：不放大，统一尺寸；同时将光环厚度按移动端变量（更薄）
+   - 去掉会导致移动端使用桌面光环厚度的覆盖
+   ----------------------------------------------------------------------- */
+
+/* =========================
+   基础变量
+   ========================= */
+:root {
+    /* 基础圆角 */
+    --r: 20px;
+    --r-pill: calc(var(--r) * 2);
+    /* 品牌/链接色与柔光 */
+    --c-link: #3a4a60;
+    --accent-shadow: rgba(251,146,60,.30);
+    /* 下播滤镜（可调） */
+    --off-dim: .70;
+    --off-contrast: 1.02;
+    --off-sat: 1.05;
+    --off-card-alpha: .08;
+    /* 毛玻璃强度 */
+    --badge-blur: 16px;
+    --badge-stroke: rgba(255,255,255,.28);
+    /* 封面背景 */
+    --cover-src: none;
+    /* 头像尺寸（桌面默认） */
+    --avatar-size: 88px;
+    /* 角标（桌面默认） */
+    --tag-size: 20px; /* 角标直径 */
+    --tag-shift-x: 10%; /* 角标向右偏移（越小越往头像里压） */
+    --tag-shift-y: 10%;
+    --tag-bg-size: 85% 85%; /* 闪电在圆内占比 */
+    --tag-zoom: 1.12;
+    /* QR 尺寸 */
+    --qr-size: 150px;
+    --qr-size-sm: 100px;
+    /* dot 尺寸与光环（桌面/移动） */
+    --dot-size-desktop: 8px;
+    --dot-size-mobile: 5px;
+    --dot-ring-desktop: 4px;
+    --dot-ring-mobile: 2px; /* ↓ 比你之前更薄，解决“下播过大”的观感 */
+    /* 运行时用于 box-shadow 的当前值（由媒体查询覆盖） */
+    --dot-size: var(--dot-size-desktop);
+    --dot-ring: var(--dot-ring-desktop);
+    --dot-ring-color: var(--c-link); /* live 用链接色；off 时切到灰色 */
+    /* SVG 闪电（白色，描边更胖）——默认（移动端/通用）不偏移 */
+    --svg-lightning: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><filter id='g' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur in='SourceGraphic' stdDeviation='1.2' result='blur'/><feMerge><feMergeNode in='blur'/><feMergeNode in='blur'/></feMerge></filter></defs><g fill='%23fff' stroke='%23fff' stroke-width='4' stroke-linejoin='round' transform='translate(0,5)'><path d='M36 4 L22 32 L34 32 L28 60 L48 28 L34 28 Z' filter='url(%23g)' opacity='0.7'/><path d='M36 4 L22 32 L34 32 L28 60 L48 28 L34 28 Z'/></g></svg> ");
+}
+
+/* 桌面端：把闪电在圆内整体向左微移 */
+@media (min-width:721px) {
+    :root {
+        --svg-lightning: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>\
+<defs>\
+  <filter id='g' x='-50%' y='-50%' width='200%' height='200%'>\
+    <feGaussianBlur in='SourceGraphic' stdDeviation='1.2' result='blur'/>\
+    <feMerge><feMergeNode in='blur'/><feMergeNode in='blur'/></feMerge>\
+  </filter>\
+</defs>\
+<g fill='%23fff' stroke='%23fff' stroke-width='4' stroke-linejoin='round' transform='translate(-2,0)'>\
+  <path d='M36 4 L22 32 L34 32 L28 60 L48 28 L34 28 Z' filter='url(%23g)' opacity='0.7'/>\
+  <path d='M36 4 L22 32 L34 32 L28 60 L48 28 L34 28 Z'/>\
+</g>\
+</svg>");
+    }
+}
+
+/* 移动端：角标更小、收敛稍多，保持闪电不偏移 */
+@media (max-width:720px) {
+    :root {
+        --tag-size: 14px;
+        --tag-shift-x: -15%;
+        --tag-shift-y: -15%;
+    }
+}
+
+/* =========================
+   Reset & Typography
+   ========================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font: 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+    /* =========================
+   背景幕布（毛玻璃大背景）
+   ========================= */
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background-size: cover;
+        background-position: center;
+        filter: blur(28px) saturate(130%);
+        transform: scale(1.06);
+        background-image: var(--cover-src);
+    }
+
+    body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        backdrop-filter: blur(4px);
+    }
+
+    body.live::after {
+        background: linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.25));
+    }
+
+    body.off::after {
+        background: linear-gradient(180deg,rgba(10,12,16,.45),rgba(10,12,16,.30)) !important;
+    }
+
+    /* live/off 文字色谱 + dot 颜色源 */
+    body.live {
+        --c-text-strong: #253143;
+        --c-text: #324055;
+        --c-text-muted: #6b7a90;
+        --dot-ring-color: var(--c-link);
+    }
+
+    body.off {
+        --c-text-strong: #eef3f8;
+        --c-text: #cfd8e3;
+        --c-text-muted: #9fb1c6;
+        --dot-ring-color: var(--c-dot-off);
+    }
+
+.wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 40px;
+}
+
+/* =========================
+   卡片：毛玻璃
+   ========================= */
+.card {
+    position: relative;
+    border-radius: var(--r);
+    padding: 16px;
+    max-width: 1280px;
+    width: 100%;
+    display: grid;
+    gap: 16px;
+    background: rgba(255,255,255,.28);
+    border: 1px solid rgba(255,255,255,.18);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    backdrop-filter: blur(14px) saturate(120%);
+    isolation: isolate;
+}
+
+    .card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+    }
+
+body.live .card {
+    background: rgba(255,255,255,.32);
+    border-color: rgba(10,20,60,.08);
+    box-shadow: 0 8px 24px rgba(16,24,40,.06);
+    color: var(--c-text);
+}
+
+body.off .card {
+    background: rgba(255,255,255,var(--off-card-alpha));
+    border-color: rgba(255,255,255,.12);
+    box-shadow: 0 6px 20px rgba(0,0,0,.25);
+    color: var(--c-text);
+}
+
+.card.layout-a {
+    border-radius: 0 !important;
+}
+
+/* 桌面两列布局（右列为 QR） */
+@media (min-width:721px) {
+    .card {
+        grid-template-columns: minmax(0,1fr) auto;
+        grid-auto-flow: row dense;
+        justify-items: stretch;
+        align-items: start;
+        margin-inline: auto;
+    }
+
+    .left {
+        grid-column: 1;
+        min-width: 0;
+        padding-left: 6px !important;
+    }
+
+        .left > * {
+            margin-left: 0 !important;
+        }
+
+    .qr {
+        grid-column: 2;
+        align-self: start;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+        max-width: 100%;
+    }
+
+    .cover, .signature {
+        grid-column: 1 / -1;
+    }
+}
+
+/* =========================
+   封面
+   ========================= */
+.cover {
+    position: relative;
+    aspect-ratio: 16/9;
+    border-radius: var(--r);
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0,0,0,.18);
+    border: 1px solid rgba(255,255,255,.08);
+    margin: 0;
+}
+
+    .cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+body.off .cover img {
+    filter: brightness(var(--off-dim)) saturate(var(--off-sat)) contrast(var(--off-contrast));
+}
+
+/* =========================
+   徽标 & 时长（共同）
+   ========================= */
+.badge, .duration {
+    position: absolute;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: var(--r-pill);
+    font-weight: 900;
+    background: transparent;
+    border: none;
+    isolation: isolate;
+    -webkit-backdrop-filter: blur(var(--badge-blur)) saturate(160%);
+    backdrop-filter: blur(var(--badge-blur)) saturate(160%);
+    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    line-height: 1;
+}
+
+.badge {
+    top: 14px;
+    right: 14px;
+    font-size: 14px;
+    letter-spacing: .06em;
+}
+
+.duration {
+    right: 14px;
+    bottom: 14px;
+    font-size: 15px;
+}
+
+    .badge::before, .duration::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        z-index: -1;
+        box-shadow: inset 0 0 0 1px var(--badge-stroke), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(0,0,0,.06);
+    }
+
+body.live .badge, body.live .duration {
+    color: #111827;
+    text-shadow: 0 1px 0 rgba(255,255,255,.40), 0 0 1px rgba(0,0,0,.06);
+}
+
+body.off .badge, body.off .duration {
+    color: #E5E7EB;
+    text-shadow: 0 1px 0 rgba(0,0,0,.35), 0 0 6px rgba(0,0,0,.25);
+}
+
+body.live .badge::before, body.live .duration::before {
+    background: linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.126));
+}
+
+body.off .badge::before, body.off .duration::before {
+    background: linear-gradient(135deg,rgba(15,17,22,.22),rgba(31,41,55,.187));
+}
+
+/* =========================
+   DOT（统一实现）
+   - 使用运行时变量 --dot-size / --dot-ring / --dot-ring-color
+   - 移动端不再出现椭圆：aspect-ratio + inline-block + flex:0 0 auto
+   ========================= */
+.badge .dot,
+.duration .dot {
+    display: inline-block; /* 避免 flex 对内容尺寸的影响 */
+    width: var(--dot-size);
+    height: var(--dot-size);
+    aspect-ratio: 1 / 1; /* 保证正方形，防椭圆 */
+    border-radius: 50%; /* 正圆 */
+    flex: 0 0 auto; /* 不让 flex 拉伸/压缩 */
+    position: relative;
+    background: var(--c-link); /* 具体颜色的发光取决于 --dot-ring-color */
+    box-shadow: 0 0 0 var(--dot-ring) color-mix(in srgb, var(--dot-ring-color) 35%, white 65%), 0 0 12px rgba(58,74,96,.60), 0 0 24px rgba(58,74,96,.40), 0 0 36px rgba(58,74,96,.25);
+}
+
+/* color-mix 降级 */
+@supports not (color: color-mix(in srgb, white, black)) {
+    .badge .dot, .duration .dot {
+        box-shadow: 0 0 0 var(--dot-ring) rgba(255,255,255,.35), 0 0 12px rgba(58,74,96,.60), 0 0 24px rgba(58,74,96,.40), 0 0 36px rgba(58,74,96,.25);
+    }
+}
+
+/* off：仅切换 dot 实体色，光环颜色已由 --dot-ring-color 控制 */
+:root {
+    --c-dot-off: #9CA3AF;
+}
+
+body.off .badge .dot,
+body.off .duration .dot {
+    background: var(--c-dot-off) !important;
+}
+
+/* 桌面端尺寸/对齐（保持你原本的感觉） */
+@media (min-width:721px) {
+    :root {
+        --dot-size: var(--dot-size-desktop);
+        --dot-ring: var(--dot-ring-desktop);
+    }
+
+    body.live .badge .dot, body.live .duration .dot {
+        top: 0px;
+    }
+    /* live 轻微下压 */
+    body.off .badge .dot, body.off .duration .dot {
+        top: -1px;
+    }
+    /* off 轻微上抬 */
+}
+
+/* 移动端尺寸/对齐（关键修复） */
+@media (max-width:720px) {
+    :root {
+        --dot-size: var(--dot-size-mobile);
+        --dot-ring: var(--dot-ring-mobile);
+    }
+
+    /* 统一 badge/duration 的整体尺度 */
+    .badge, .duration {
+        padding: 5px 9px !important;
+        font-size: 9px !important;
+        border-radius: calc(var(--r) * 1.15) !important;
+        line-height: 1 !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    /* 上播偏下 → 上抬；下播过大 → 不放大、光环更薄（由变量已处理），位置同 live */
+    body.live .badge .dot, body.live .duration .dot {
+        top: -0.5px !important;
+    }
+
+    body.off .badge .dot, body.off .duration .dot {
+        top: -0.5px !important;
+    }
+}
+
+/* =========================
+   左栏文本（标题 / 用户 / 动作）
+   ========================= */
+.title {
+    margin: 8px 0 20px;
+    font-size: clamp(20px,2.6vw,32px);
+    font-weight: 950;
+    line-height: 1.18;
+    letter-spacing: .005em;
+    color: var(--c-text-strong);
+    overflow-wrap: anywhere;
+    max-width: 100%;
+}
+
+@media (min-width:721px) {
+    .title {
+        font-size: clamp(24px,3vw,40px);
+    }
+}
+
+.meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+}
+
+.up {
+    font-size: clamp(18px,1.6vw,22px);
+    font-weight: 900;
+    letter-spacing: .01em;
+    color: var(--c-text);
+}
+
+.actions {
+    display: flex;
+    gap: 14px;
+    font-size: 17px;
+    color: var(--c-text-muted);
+}
+
+    .actions a {
+        color: var(--c-link);
+        text-decoration: none;
+        font-weight: 800;
+        text-underline-offset: 3px;
+    }
+
+/* =========================
+   头像
+   ========================= */
+.avatar-wrap {
+    position: relative;
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    border-radius: 50%;
+    overflow: visible;
+    flex-shrink: 0;
+}
+
+.avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 2px 10px rgba(0,0,0,.16);
+}
+
+    .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+body.off .avatar img {
+    filter: brightness(var(--off-dim)) saturate(var(--off-sat)) contrast(var(--off-contrast));
+}
+
+/* =========================
+   角标
+   ========================= */
+.tag {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: var(--tag-size);
+    height: var(--tag-size);
+    border-radius: 50%;
+    overflow: hidden;
+    aspect-ratio: 1/1;
+    z-index: 3;
+    border: 2px solid #fff;
+    transform: translate(var(--tag-shift-x), var(--tag-shift-y));
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: var(--tag-bg-size);
+    box-shadow: none !important;
+}
+
+.tag-yellow {
+    background-color: #FACC15;
+    background-image: var(--svg-lightning);
+}
+
+.tag-blue {
+    background-color: #3B82F6;
+    background-image: var(--svg-lightning);
+}
+
+body.off .tag {
+    filter: brightness(var(--off-dim)) saturate(var(--off-sat)) contrast(var(--off-contrast));
+}
+
+.tag > img, .tag > svg, .tag #tagIcon {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    border-radius: 50%;
+    transform: scale(var(--tag-zoom)) !important;
+    transform-origin: center !important;
+    image-rendering: auto !important;
+    position: relative;
+    z-index: 0;
+}
+
+body.off .tag > img, body.off .tag > svg, body.off .tag #tagIcon {
+    filter: brightness(var(--off-dim)) saturate(var(--off-sat)) contrast(var(--off-contrast)) !important;
+}
+
+/* =========================
+   二维码卡片
+   ========================= */
+.qr-tip {
+    display: none;
+}
+
+.side {
+    width: var(--qr-size);
+    height: var(--qr-size);
+    padding: 10px;
+    border-radius: var(--r);
+    overflow: hidden;
+    background: linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.06));
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: 0 12px 28px rgba(0,0,0,.18);
+    background-clip: padding-box;
+    position: relative;
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    backdrop-filter: blur(8px) saturate(120%);
+}
+
+    .side img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+        image-rendering: auto;
+    }
+
+body.off .qr img {
+    filter: grayscale(100%) opacity(.95);
+}
+
+/* =========================
+   签名
+   ========================= */
+.signature {
+    text-align: center;
+    font-size: 14px;
+    letter-spacing: .06em;
+    margin: 0;
+}
+
+body.live .signature {
+    color: #0f172a;
+    text-shadow: 0 0 8px var(--accent-shadow), 0 1px 2px rgba(0,0,0,.22);
+}
+
+body.off .signature {
+    color: #e5e7eb;
+    text-shadow: 0 0 8px var(--accent-shadow), 0 0 18px rgba(255,255,255,.28);
+}
+
+/* =========================
+   图片统一为块级，避免缝隙
+   ========================= */
+img {
+    display: block !important;
+}
+
+/* =========================
+   无滤镜降级（不支持 backdrop-filter）
+   ========================= */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .badge, .duration, .side {
+        background: transparent !important;
+        position: relative;
+        z-index: 0;
+    }
+
+        .badge::before, .badge::after, .duration::before, .duration::after, .side::before, .side::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        .badge::before, .duration::before, .side::before {
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            filter: blur(14px) saturate(130%);
+            transform: scale(1.08);
+            z-index: -2;
+            background-image: var(--cover-src);
+        }
+
+        .badge::after, .duration::after, .side::after {
+            z-index: -1;
+        }
+}
+
+/* =========================
+   仅直播态：根据 dot 亮暗自适应徽标前景与描边
+   ========================= */
+body.live .badge[data-tone="dark"] {
+    color: #F8FAFC !important;
+}
+
+    body.live .badge[data-tone="dark"]::before {
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,.38), inset 0 1px 0 rgba(255,255,255,.45), inset 0 -1px 0 rgba(0,0,0,.06);
+    }
+
+    body.live .badge[data-tone="dark"] .badge-text {
+        text-shadow: 0 1px 0 rgba(0,0,0,.35), 0 0 8px rgba(0,0,0,.25);
+    }
+
+body.live .badge[data-tone="light"] {
+    color: #0F172A !important;
+}
+
+    body.live .badge[data-tone="light"]::before {
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(0,0,0,.04);
+    }
+
+    body.live .badge[data-tone="light"] .badge-text {
+        text-shadow: 0 1px 0 rgba(255,255,255,.40), 0 0 1px rgba(0,0,0,.06);
+    }
+
+/* =========================
+   移动端布局与文字缩放
+   ========================= */
+@media (max-width:720px) {
+    .card {
+        padding: 16px 0 !important;
+        display: grid !important;
+        grid-template-columns: [full-start] clamp(12px,4vw,20px) [content-start] minmax(0,680px) [content-end] clamp(12px,4vw,20px) [full-end];
+        grid-auto-flow: row;
+        row-gap: 16px;
+        column-gap: 0;
+    }
+
+        .card > * {
+            grid-column: content-start / content-end !important;
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+    .qr {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 12px !important;
+        justify-content: space-between !important;
+        padding-inline: 0 !important;
+    }
+
+    .qr-tip {
+        display: block;
+        font-size: clamp(14px,3.8vw,18px);
+        font-weight: 900;
+        color: var(--c-text-strong);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1 1 auto !important;
+        margin-right: 12px;
+    }
+
+    .qr .side {
+        flex: 0 0 auto !important;
+        margin-left: auto !important;
+        width: var(--qr-size-sm) !important;
+        height: var(--qr-size-sm) !important;
+    }
+
+    :root {
+        --avatar-size: 64px;
+    }
+
+    .title {
+        font-size: clamp(16px,4.5vw,22px);
+        margin: 6px 0 12px;
+    }
+
+    .up {
+        font-size: clamp(14px,3.8vw,18px);
+    }
+
+    .actions {
+        font-size: 14px;
+        gap: 8px;
+    }
+
+    .text {
+        gap: 5px;
+    }
+
+    .meta {
+        gap: 10px;
+    }
+}
+/* =========================================================
+   修复：移动端下播（body.off）dot 被挤扁
+   思路：.dot 仅做 5×5 容器；用 ::after 画真正的圆点
+   好处：不再受 flex/line-height/阴影合成层影响
+   ========================================================= */
+@media (max-width:720px) {
+    .signature {
+        font-size: 12px !important; /* 比桌面小一点 */
+        letter-spacing: .05em; /* 可以稍收紧 */
+    }
+    body.off .badge .dot,
+    body.off .duration .dot {
+        /* 容器本体：锁死盒子，禁用自带背景与阴影 */
+        width: 5px !important;
+        height: 5px !important;
+        min-width: 5px !important;
+        min-height: 5px !important;
+        max-width: 5px !important;
+        max-height: 5px !important;
+        display: block !important; /* 避免 inline 对齐参与 */
+        flex: 0 0 auto !important; /* 不让 flex 拉伸 */
+        position: relative !important; /* 给 ::after 做定位参照 */
+        background: transparent !important;
+        box-shadow: none !important;
+        line-height: 0 !important; /* 切断行高影响 */
+        aspect-ratio: auto !important; /* 交给尺寸锁死，不用比例 */
+        transform: translateZ(0); /* 独立合成层，避免抖动 */
+    }
+
+        body.off .badge .dot::after,
+        body.off .duration .dot::after {
+            content: "";
+            position: absolute;
+            inset: 0; /* 填满 5×5 容器 */
+            border-radius: 50%; /* 绝对正圆 */
+            background: var(--c-dot-off); /* 你已有的下播灰：#9CA3AF */
+            /* 使用你移动端的更薄光环，避免“显得过大” */
+            box-shadow: 0 0 0 var(--dot-ring-mobile) color-mix(in srgb, var(--c-dot-off) 35%, white 65%), 0 0 10px rgba(156,163,175,.50), 0 0 18px rgba(156,163,175,.35), 0 0 28px rgba(156,163,175,.22);
+            /* 轻微上抬，让视觉中线对齐（上播你说正常，用同样的 -0.5px） */
+            transform: translateY(0.0 px);
+            will-change: transform;
+            pointer-events: none;
+        }
+
+    /* color-mix 降级：老 Safari */
+    @supports not (color: color-mix(in srgb, white, black)) {
+        body.off .badge .dot::after,
+        body.off .duration .dot::after {
+            transform: translateY(0.0 px);
+            box-shadow: 0 0 0 var(--dot-ring-mobile) rgba(255,255,255,.35), 0 0 10px rgba(156,163,175,.50), 0 0 18px rgba(156,163,175,.35), 0 0 28px rgba(156,163,175,.22);
+        }
+    }
+}
+
+/* 下播：dot 发强烈白光（不改尺寸/位置/主体颜色） */
+@media (min-width:721px) {
+    body.off .badge .dot,
+    body.off .duration .dot {
+        /* 只改发光 */
+        box-shadow: 0 0 0 var(--dot-ring-desktop) rgba(255,255,255,.90), 0 0 12px rgba(255,255,255,.70), 0 0 28px rgba(255,255,255,.55), 0 0 48px rgba(255,255,255,.40), 0 0 72px rgba(255,255,255,.30);
+        /* 叠加 drop-shadow，提升在毛玻璃上的可见度 */
+        filter: drop-shadow(0 0 10px rgba(255,255,255,.55)) drop-shadow(0 0 20px rgba(255,255,255,.40));
+    }
+}
+
+@media (max-width:720px) {
+    /* 你移动端用 ::after 画光，这里只加强白光 */
+    body.off .badge .dot::after,
+    body.off .duration .dot::after {
+        box-shadow: 0 0 0 var(--dot-ring-mobile) rgba(255,255,255,.90), 0 0 10px rgba(255,255,255,.70), 0 0 22px rgba(255,255,255,.55), 0 0 34px rgba(255,255,255,.40), 0 0 48px rgba(255,255,255,.30);
+        /* 同样叠加外发光，避免被合成层吃掉 */
+        filter: drop-shadow(0 0 8px rgba(255,255,255,.55)) drop-shadow(0 0 16px rgba(255,255,255,.40));
+    }
+}
+
+/* 老浏览器降级（不支持 color-mix 也能亮）——可选 */
+@supports not (color: color-mix(in srgb, white, black)) {
+    @media (max-width:720px) {
+        body.off .badge .dot::after,
+        body.off .duration .dot::after {
+            /* 重复一遍核心白光值即可 */
+            box-shadow: 0 0 0 var(--dot-ring-mobile) rgba(255,255,255,.90), 0 0 10px rgba(255,255,255,.70), 0 0 22px rgba(255,255,255,.55), 0 0 34px rgba(255,255,255,.40), 0 0 48px rgba(255,255,255,.30);
+        }
+    }
+}

@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "port": 5000,
+  "host": "127.0.0.1",
+  "cookieDir": "",
+  "cookieCloud": {
+    "endpoint": "http://127.0.0.1:8088",
+    "uuid": "你的CookieClouduuid",
+    "password": "你的CookieCloud密码"
+  }
+}

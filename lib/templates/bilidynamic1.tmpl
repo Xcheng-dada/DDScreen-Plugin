@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Bilibili Dynamic Template</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
+        :root {
+            --bg-color: #f4f5f7;
+            --card-bg: #ffffff;
+            --text-main: #18191c;
+            --text-sub: #9499a0;
+            --bili-blue: #00a1d6;
+            --bili-pink: #fb7299;
+            --border-color: #e3e5e7;
+            --forward-bg: #f1f2f3;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 30px;
+            display: inline-block;
+            min-width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .dynamic-card {
+            width: 650px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .avatar-wrap {
+            width: 48px;
+            height: 48px;
+            margin-right: 14px;
+            flex-shrink: 0;
+        }
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+        }
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .name-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--bili-pink);
+        }
+        .time {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+        .fan-card {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            height: 22px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .fan-card-bg {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }
+        .fan-card-num {
+            position: absolute;
+            left: 14%;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            font-weight: bold;
+            font-family: 'Bahnschrift', 'DIN Alternate', 'DIN Condensed', 'Impact', sans-serif;
+            font-stretch: condensed;
+            letter-spacing: 0.5px;
+            text-shadow: 0.5px 0.5px 0px rgba(255,255,255,0.8), -0.5px -0.5px 0px rgba(255,255,255,0.8);
+        }
+
+        .content {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-main);
+            margin-bottom: 16px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .bili-link {
+            color: var(--bili-blue);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .bili-emoji {
+            width: 20px;
+            height: 20px;
+            vertical-align: text-bottom;
+            margin: 0 2px;
+        }
+        .bili-emoji-large {
+            width: 60px;
+            height: 60px;
+            display: inline-block;
+            vertical-align: text-bottom;
+            margin: 0 4px;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .image-grid.single-img {
+            grid-template-columns: 1fr;
+        }
+        .image-grid.single-img img {
+            max-width: 60%;
+            height: auto;
+            max-height: 400px;
+        }
+        .image-grid.expand-img {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .image-grid.expand-img img {
+            width: 100%;
+            height: auto;
+            aspect-ratio: auto;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .image-grid img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            object-position: top;
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 16px 0;
+            line-height: 1.5;
+        }
+
+        .forward-box {
+            background: var(--forward-bg);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .forward-name {
+            color: var(--bili-blue);
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .vote-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .vote-desc {
+            font-weight: bold;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .vote-option {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+        }
+        .vote-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(251,114,153,0.15), rgba(251,114,153,0.3));
+        }
+        .vote-opt-desc {
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .vote-opt-pct {
+            font-size: 13px;
+            color: var(--bili-blue);
+        }
+        .vote-meta {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 8px;
+        }
+        .reserve-box {
+            background: #fdf6f9;
+            border: 1px solid #f8e3eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .reserve-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .reserve-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--bili-pink);
+        }
+        .reserve-desc {
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+        .reserve-btn {
+            background: var(--bili-pink);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .video-card {
+            display: flex;
+            align-items: flex-start;
+            background: #f6f7f8;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid var(--border-color);
+        }
+        .video-cover-wrap {
+            position: relative;
+            width: 220px;
+            aspect-ratio: 16 / 9;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .video-cover {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .video-duration {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: rgba(0,0,0,0.72);
+            color: #fff;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+        .video-info {
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+            min-width: 0;
+        }
+        .video-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .video-desc-text {
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .video-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+        .video-stat {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .video-stat svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+        .video-type-badge {
+            display: inline-block;
+            background: #e3f2fd;
+            color: var(--bili-blue);
+            font-size: 11px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 引入扁平化后的简单数据结构，让模板编写更加直观 -->
+    {{$item := .RawData.data.item}}
+    
+    {{if not $item}}
+    <div class="dynamic-card" style="text-align: center; color: var(--bili-pink); padding: 50px 20px;">
+        <h2 style="margin-bottom: 10px;">获取动态数据失败</h2>
+        <p style="color: var(--text-sub); font-size: 14px;">这可能是因为该动态已被删除、设为仅粉丝可见，或是 B 站接口触发了风控限制(-352等)。</p>
+    </div>
+    {{else}}
+    <div class="dynamic-card">
+        <!-- ================= 1. 头部信息 ================= -->
+        {{$author := $item.modules.module_author}}
+        <div class="header">
+            <div class="avatar-wrap">
+                <img class="avatar" src="{{$author.face}}" alt="avatar">
+            </div>
+            <div class="user-info">
+                <div class="name-row">
+                    <span class="name">{{$author.name}}</span>
+                    
+                    <!-- 判断是否有粉丝专属卡片 -->
+                    {{if $author.decorate}}
+                        {{if $author.decorate.fan}}
+                        <div class="fan-card">
+                            <img class="fan-card-bg" src="{{$author.decorate.card_url}}" />
+                            <span class="fan-card-num" style="color: {{$author.decorate.fan.color}}">
+                                {{$author.decorate.fan.num_str}}
+                            </span>
+                        </div>
+                        {{end}}
+                    {{end}}
+                </div>
+                <div class="time">{{$author.pub_time}}</div>
+            </div>
+        </div>
+
+        <!-- ================= 2. 标题 ================= -->
+        {{$dynamic := $item.modules.module_dynamic}}
+        {{if $dynamic.major}}
+            {{if $dynamic.major.article}}
+                <div class="title">{{$dynamic.major.article.title}}</div>
+            {{end}}
+        {{end}}
+
+        <!-- ================= 2.1 话题标签 ================= -->
+        {{if $dynamic.topic}}
+            {{if $dynamic.topic.name}}
+            <div style="margin-bottom: 12px;">
+                <span class="bili-link" style="display:inline-flex; align-items:center; gap: 4px; font-size: 14px;">
+                    <svg viewBox="0 0 16 16" style="width: 14px; height: 14px; fill: currentColor;"><path d="M5.19 0.99C4.91 1.19 4.84 1.58 5.04 1.86L6.11 3.39C6.31 3.67 6.70 3.74 6.98 3.54C7.26 3.35 7.33 2.96 7.13 2.67L6.06 1.14C5.86 0.86 5.47 0.79 5.19 0.99zM10.81 0.99C10.53 0.79 10.14 0.86 9.94 1.14L8.87 2.67C8.67 2.96 8.74 3.35 9.02 3.54C9.30 3.74 9.69 3.67 9.89 3.39L10.96 1.86C11.16 1.58 11.09 1.19 10.81 0.99zM8 2.56C6.50 2.56 5.17 2.62 4.20 2.68C2.92 2.76 1.90 3.74 1.81 5.03C1.75 5.75 1.71 6.65 1.71 7.63C1.71 8.60 1.75 9.50 1.81 10.22C1.90 11.48 2.90 12.46 4.15 12.55C5.10 12.62 6.40 12.69 7.88 12.69C8.38 13.17 9.43 14.08 10.66 14.64C11.01 14.80 11.43 14.86 11.74 14.58C12.04 14.30 12.02 13.88 11.92 13.52C11.81 13.16 11.76 12.82 11.73 12.56C13.01 12.47 14.09 11.54 14.19 10.22C14.25 9.50 14.29 8.60 14.29 7.63C14.29 6.65 14.25 5.75 14.19 5.03C14.10 3.74 13.08 2.76 11.80 2.68C10.83 2.62 9.50 2.56 8 2.56z" fill="currentColor"></path></svg>
+                    <span>{{$dynamic.topic.name}}</span>
+                </span>
+            </div>
+            {{end}}
+        {{end}}
+
+        <!-- ================= 2.2 动态主文本 ================= -->
+
+        <div class="content">
+            {{- if $dynamic.desc -}}
+                {{- if $dynamic.desc.rich_text_nodes -}}
+                    {{- range $node := $dynamic.desc.rich_text_nodes -}}
+                        {{- if eq $node.type "RICH_TEXT_NODE_TYPE_TEXT" -}}
+                            <span>{{$node.text}}</span>
+                        {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_AT" -}}
+                            <span class="bili-rich-text-module at bili-link" data-oid="{{$node.rid}}">@{{$node.text}}</span>
+                        {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_TOPIC" -}}
+                            <span class="bili-link" style="display:inline-flex; align-items:center; gap: 4px;">
+                                <svg viewBox="0 0 16 16" style="width: 14px; height: 14px; fill: currentColor; margin-bottom: -2px;"><path d="M5.1911266666666664 0.9880383333333334C4.908345 1.1859883333333332 4.839576666666666 1.5756933333333332 5.0375266666666665 1.8584683333333332L6.109626666666665 3.3900216666666663C6.307576666666667 3.6728033333333334 6.697288333333333 3.7415716666666663 6.980041666666667 3.5436216666666667C7.26285 3.345673333333333 7.3316 2.955966666666666 7.133666666666667 2.6731916666666664L6.061558333333332 1.1416383333333333C5.863613333333333 0.8588566666666666 5.473901666666667 0.7900883333333333 5.1911266666666664 0.9880383333333334z" fill="currentColor"></path><path d="M10.808908333333331 0.9880316666666666C10.52615 0.7900883333333333 10.136408333333332 0.8588566666666666 9.938466666666667 1.1416383333333333L8.866399999999999 2.6731916666666664C8.668458333333334 2.9559716666666667 8.737216666666665 3.345678333333333 9.020024999999999 3.543628333333333C9.302775 3.7415716666666663 9.692466666666666 3.6728033333333334 9.890458333333333 3.3900216666666663L10.962533333333333 1.8584683333333332C11.160466666666665 1.5756883333333334 11.091716666666665 1.1859816666666667 10.808908333333331 0.9880316666666666z" fill="currentColor"></path><path d="M8.388033333333333 8.2152L8.548749999999998 7.036716666666667L7.611974999999999 7.036716666666667L7.45125 8.2152L8.388033333333333 8.2152z" fill="currentColor"></path><path d="M8 2.559733333333333C6.498214999999999 2.559733333333333 5.16768 2.6184066666666665 4.195425 2.678813333333333C2.923148333333333 2.75786 1.9012316666666664 3.7431133333333335 1.8069283333333335 5.026566666666666C1.7538833333333335 5.748475 1.7082533333333334 6.652113333333333 1.7082533333333334 7.626266666666666C1.7082533333333334 8.604275 1.75425 9.504349999999999 1.8075966666666665 10.219908333333333C1.9018333333333333 11.483925 2.899678333333333 12.460316666666666 4.154273333333333 12.551708333333332C5.104525 12.620916666666668 6.4048050000000005 12.688916666666666 7.876416666666666 12.692558333333332C8.379624999999999 13.169883333333333 9.433408333333333 14.084808333333331 10.662975 14.643741666666665C11.005616666666665 14.799541666666666 11.427091666666666 14.859316666666667 11.735999999999999 14.576575C12.039016666666665 14.299274999999998 12.024899999999999 13.881124999999999 11.919241666666666 13.523958333333333C11.811016666666664 13.158316666666666 11.757858333333333 12.821666666666667 11.73155 12.559758333333335C13.013916666666667 12.468349999999997 14.093808333333332 11.543458333333334 14.192449999999997 10.220175C14.245791666666666 9.504874999999998 14.291733333333333 8.604875 14.291733333333333 7.626266666666666C14.291733333333333 6.6514999999999995 14.246125 5.74798 14.193108333333331 5.026299999999999C14.098808333333332 3.7429283333333334 13.076958333333332 2.757873333333333 11.804816666666664 2.6788266666666662C10.832533333333332 2.6184133333333333 9.501883333333334 2.559733333333333 8 2.559733333333333zM6.536343333333332 10.730624999999998C6.226251666666666 10.688316666666665 6.009155 10.402649999999998 6.0514399999999995 10.092558333333333L6.152898333333334 9.348533333333332L5.457055 9.348533333333332C5.144096666666666 9.348533333333332 4.890388333333333 9.094850000000001 4.890388333333333 8.781866666666666C4.890388333333333 8.468933333333332 5.144096666666666 8.2152 5.457055 8.2152L6.307441666666667 8.2152L6.468145 7.036716666666667L5.457055 7.036716666666667C5.144096666666666 7.036716666666667 4.890388333333333 6.783036666666668 4.890388333333333 6.470073333333333C4.890388333333333 6.15711 5.144096666666666 5.903406666666666 5.457055 5.903406666666666L6.6226883333333335 5.903406666666666L6.744933333333333 5.006731666666666C6.787241666666667 4.6966399999999995 7.0729083333333325 4.479536666666666 7.383 4.521823333333333C7.693091666666666 4.564108333333333 7.910191666666667 4.849765 7.867875 5.159858333333333L7.766483333333333 5.903406666666666L8.703325 5.903406666666666L8.825558333333333 5.006731666666666C8.867866666666666 4.6966399999999995 9.153533333333332 4.479536666666666 9.463625 4.521823333333333C9.773716666666667 4.564108333333333 9.990816666666666 4.849765 9.948508333333333 5.159858333333333L9.847116666666667 5.903406666666666L10.542933333333332 5.903406666666666C10.855858333333332 5.903406666666666 11.1096 6.15711 11.1096 6.470073333333333C11.1096 6.783036666666668 10.855858333333332 7.036716666666667 10.542933333333332 7.036716666666667L9.692599999999999 7.036716666666667L9.531875 8.2152L10.542933333333332 8.2152C10.855858333333332 8.2152 11.1096 8.468933333333332 11.1096 8.781866666666666C11.1096 9.094850000000001 10.855858333333332 9.348533333333332 10.542933333333332 9.348533333333332L9.377308333333332 9.348533333333332L9.255008333333333 10.245691666666666C9.212691666666666 10.555783333333332 8.927033333333332 10.772874999999999 8.616941666666666 10.730624999999998C8.306849999999999 10.688316666666665 8.089749999999999 10.402649999999998 8.132058333333333 10.092558333333333L8.233516666666667 9.348533333333332L7.296741666666667 9.348533333333332L7.1743749999999995 10.245691666666666C7.132066666666667 10.555783333333332 6.846406666666667 10.772874999999999 6.536343333333332 10.730624999999998z"></path></svg>
+                                <span>{{$node.text}}</span>
+                            </span>
+                        {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_VOTE" -}}
+                            <span class="bili-link" style="display:inline-flex; align-items:center; gap: 4px;">
+                                <svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 23 23"><path d="M1.9166666666666667 13.657304166666666C1.9166666666666667 12.334133333333334 2.9893195833333333 11.261470833333332 4.3125 11.261470833333332L5.270833333333334 11.261470833333332C6.59401375 11.261470833333332 7.666666666666667 12.334133333333334 7.666666666666667 13.657304166666666L7.666666666666667 17.011470833333334C7.666666666666667 18.334641666666666 6.59401375 19.40730416666667 5.270833333333334 19.40730416666667L4.3125 19.40730416666667C2.9893195833333333 19.40730416666667 1.9166666666666667 18.334641666666666 1.9166666666666667 17.011470833333334L1.9166666666666667 13.657304166666666zM4.3125 12.698970833333332C3.7832316666666665 12.698970833333332 3.354166666666667 13.128016666666667 3.354166666666667 13.657304166666666L3.354166666666667 17.011470833333334C3.354166666666667 17.540758333333333 3.7832316666666665 17.96980416666667 4.3125 17.96980416666667L5.270833333333334 17.96980416666667C5.8001112500000005 17.96980416666667 6.229166666666667 17.540758333333333 6.229166666666667 17.011470833333334L6.229166666666667 13.657304166666666C6.229166666666667 13.128016666666667 5.8001112500000005 12.698970833333332 5.270833333333334 12.698970833333332L4.3125 12.698970833333332z" fill="currentColor"></path><path d="M8.625 5.511355833333334C8.625 4.188175416666667 9.697672083333334 3.1155225000000004 11.020833333333334 3.1155225000000004L11.979166666666668 3.1155225000000004C13.3023375 3.1155225000000004 14.375 4.188175416666667 14.375 5.511355833333334L14.375 17.011375C14.375 18.334545833333333 13.3023375 19.407208333333337 11.979166666666668 19.407208333333337L11.020833333333334 19.407208333333337C9.697672083333334 19.407208333333337 8.625 18.334545833333333 8.625 17.011375L8.625 5.511355833333334zM11.020833333333334 4.5530225C10.491545833333333 4.5530225 10.0625 4.982077916666667 10.0625 5.511355833333334L10.0625 17.011375C10.0625 17.540614583333333 10.491545833333333 17.969708333333337 11.020833333333334 17.969708333333337L11.979166666666668 17.969708333333337C12.508454166666668 17.969708333333337 12.9375 17.540614583333333 12.9375 17.011375L12.9375 5.511355833333334C12.9375 4.982077916666667 12.508454166666668 4.5530225 11.979166666666668 4.5530225L11.020833333333334 4.5530225z" fill="currentColor"></path><path d="M15.333333333333334 10.542625C15.333333333333334 9.219425416666667 16.405995833333332 8.1467725 17.729166666666668 8.1467725L18.6875 8.1467725C20.010670833333336 8.1467725 21.083333333333336 9.219425416666667 21.083333333333336 10.542625L21.083333333333336 17.011375C21.083333333333336 18.334545833333333 20.010670833333336 19.407208333333337 18.6875 19.407208333333337L17.729166666666668 19.407208333333337C16.405995833333332 19.407208333333337 15.333333333333334 18.334545833333333 15.333333333333334 17.011375L15.333333333333334 10.542625zM17.729166666666668 9.584282083333333C17.19987916666667 9.584282083333333 16.770833333333336 10.0133375 16.770833333333336 10.542625L16.770833333333336 17.011375C16.770833333333336 17.540614583333333 17.19987916666667 17.969708333333337 17.729166666666668 17.969708333333337L18.6875 17.969708333333337C19.2167875 17.969708333333337 19.645833333333336 17.540614583333333 19.645833333333336 17.011375L19.645833333333336 10.542625C19.645833333333336 10.0133375 19.2167875 9.584282083333333 18.6875 9.584282083333333L17.729166666666668 9.584282083333333z" fill="currentColor"></path></svg>
+                                <span>{{$node.text}}</span>
+                            </span>
+                        {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_EMOJI" -}}{{- if $node.emoji -}}<img class="bili-emoji" src="{{$node.emoji.icon_url}}" />{{- end -}}
+                        {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_WEB" -}}<a class="opus-text-rich-hl link bili-link" href="{{if $node.jump_url}}{{$node.jump_url}}{{else}}#{{end}}" target="_blank"><svg style="width: 14px; height: 14px; fill: currentColor; margin-bottom: -2px;" viewBox="0 0 1024 1024"><path d="M574 665.4a8.03 8.03 0 0 0-11.3 0L446.5 782.2c-53.8 53.8-144.6 59.5-204 0-59.5-59.5-53.8-144.6 0-204l116.2-116.2c3.1-3.1 3.1-8.2 0-11.3l-39.8-39.8a8.03 8.03 0 0 0-11.3 0L191.4 527.1c-96.9 96.9-96.9 253.9 0 350.8 96.9 96.9 253.9 96.9 350.8 0l116.2-116.2c3.1-3.1 3.1-8.2 0-11.3L618.6 710.6a8.03 8.03 0 0 0 0-11.3L574 665.4zm258.6-474c-96.9-96.9-253.9-96.9-350.8 0L365.6 307.6a8.03 8.03 0 0 0 0 11.3l39.8 39.8c3.1 3.1 8.2 3.1 11.3 0l116.2-116.2c53.8-53.8 144.6-59.5 204 0 59.5 59.5 53.8 144.6 0 204L620.7 562.7a8.03 8.03 0 0 0 0 11.3l39.8 39.8c3.1 3.1 8.2 3.1 11.3 0l116.2-116.2c96.9-96.9 96.9-253.9 0-350.8z"/><path d="M358.5 617.9a8.03 8.03 0 0 0 11.3 0l295.7-295.7c3.1-3.1 3.1-8.2 0-11.3l-39.8-39.8a8.03 8.03 0 0 0-11.3 0L318.7 566.8a8.03 8.03 0 0 0 0 11.3l39.8 39.8z"/></svg> 网页链接</a>
+                        {{- else -}}
+                            <span>{{$node.text}}</span>
+                        {{- end -}}
+                    {{- end -}}
+                {{- else -}}
+                    <span>{{$dynamic.desc.text}}</span>
+                {{- end -}}
+            {{- end -}}
+        </div>
+
+        <!-- ================= 2.6 视频卡片 ================= -->
+        {{if $dynamic.major}}
+            {{if $dynamic.major.archive}}
+                {{$arc := $dynamic.major.archive}}
+                <a class="video-card" href="{{if $arc.jump_url}}{{$arc.jump_url}}{{else}}#{{end}}" target="_blank" style="text-decoration:none;color:inherit;">
+                    <div class="video-cover-wrap">
+                        <img class="video-cover" src="{{$arc.cover}}" referrerpolicy="no-referrer" />
+                        {{if $arc.duration_text}}<span class="video-duration">{{$arc.duration_text}}</span>{{end}}
+                    </div>
+                    <div class="video-info">
+                        {{if $arc.type_name}}<span class="video-type-badge">投稿了{{$arc.type_name}}</span>{{end}}
+                        <div class="video-title">{{$arc.title}}</div>
+                        {{if $arc.desc}}<div class="video-desc-text">{{$arc.desc}}</div>{{end}}
+                        <div class="video-stats">
+                            {{if $arc.stat}}
+                                {{if $arc.stat.play}}<span class="video-stat"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>{{$arc.stat.play}}</span>{{end}}
+                                {{if $arc.stat.danmaku}}<span class="video-stat"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>{{$arc.stat.danmaku}}</span>{{end}}
+                            {{end}}
+                        </div>
+                    </div>
+                </a>
+            {{end}}
+        {{end}}
+
+        <!-- ================= 3. 自身携带的图片 ================= -->
+        {{if $dynamic.major}}
+            {{if $dynamic.major.draw}}
+                {{if $dynamic.major.draw.items}}
+                {{if .Expand}}
+                <div class="image-grid expand-img">
+                    {{range $pic := $dynamic.major.draw.items}}
+                        <img src="{{$pic.src}}" />
+                    {{end}}
+                </div>
+                {{else}}
+                <div class="image-grid {{if eq (len $dynamic.major.draw.items) 1}}single-img{{end}}">
+                    {{range $index, $pic := $dynamic.major.draw.items}}
+                        {{if lt $index 9}}
+                        <img src="{{$pic.src}}@400w_400h_1c.webp" />
+                        {{end}}
+                    {{end}}
+                </div>
+                {{end}}
+                {{end}}
+            {{end}}
+        {{end}}
+
+        <!-- ================= 4. 附加卡片 (投票/预约等) ================= -->
+        {{if $dynamic.additional}}
+            {{if $dynamic.additional.vote}}
+            {{$vote := $dynamic.additional.vote}}
+            <div class="vote-box">
+                <div class="vote-desc">📊 {{$vote.desc}}</div>
+                {{if $vote.options}}
+                    {{range $opt := $vote.options}}
+                    <div class="vote-option">
+                        <!-- 原始JSON无法直接在模板计算百分比，保留底色条但宽度固定或取消 -->
+                        <div class="vote-progress" style="width: 0%;"></div>
+                        <span class="vote-opt-desc">{{$opt.desc}}</span>
+                        <span class="vote-opt-pct">{{if $opt.cnt}}{{$opt.cnt}} 票{{end}}</span>
+                    </div>
+                    {{end}}
+                {{end}}
+                <div class="vote-meta">{{if $vote.join_num}}{{$vote.join_num}} 人参与{{end}}</div>
+            </div>
+            {{end}}
+
+            {{if $dynamic.additional.reserve}}
+            {{$res := $dynamic.additional.reserve}}
+            <div class="reserve-box">
+                <div class="reserve-info">
+                    <div class="reserve-title">📅 {{$res.title}}</div>
+                    <div class="reserve-desc">
+                        {{if $res.desc1}}{{$res.desc1.text}}{{end}}
+                        {{if $res.desc2}} | {{$res.desc2.text}}{{end}}
+                    </div>
+                </div>
+                <div class="reserve-btn">预约</div>
+            </div>
+            {{end}}
+        {{end}}
+
+        <!-- ================= 5. 如果是转发动态，渲染引用的原动态 ================= -->
+        {{if eq $item.type "DYNAMIC_TYPE_FORWARD"}}
+            {{if $item.orig}}
+            {{$orig := $item.orig}}
+            {{$oAuthor := $orig.modules.module_author}}
+            {{$oDynamic := $orig.modules.module_dynamic}}
+            <div class="forward-box">
+                <div class="forward-name"{{if $oAuthor}} data-mid="{{printf "%.0f" $oAuthor.mid}}" data-face="{{$oAuthor.face}}"{{end}}>@{{if $oAuthor}}{{$oAuthor.name}}{{end}}</div>
+
+                <!-- 原动态视频卡片 -->
+                {{if $oDynamic.major}}
+                    {{if $oDynamic.major.archive}}
+                        {{$oArc := $oDynamic.major.archive}}
+                        <a class="video-card" href="{{if $oArc.jump_url}}{{$oArc.jump_url}}{{else}}#{{end}}" target="_blank" style="text-decoration:none;color:inherit;">
+                            <div class="video-cover-wrap">
+                                <img class="video-cover" src="{{$oArc.cover}}" referrerpolicy="no-referrer" />
+                                {{if $oArc.duration_text}}<span class="video-duration">{{$oArc.duration_text}}</span>{{end}}
+                            </div>
+                            <div class="video-info">
+                                {{if $oArc.type_name}}<span class="video-type-badge">投稿了{{$oArc.type_name}}</span>{{end}}
+                                <div class="video-title">{{$oArc.title}}</div>
+                                {{if $oArc.desc}}<div class="video-desc-text">{{$oArc.desc}}</div>{{end}}
+                                <div class="video-stats">
+                                    {{if $oArc.stat}}
+                                        {{if $oArc.stat.play}}<span class="video-stat"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>{{$oArc.stat.play}}</span>{{end}}
+                                        {{if $oArc.stat.danmaku}}<span class="video-stat"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>{{$oArc.stat.danmaku}}</span>{{end}}
+                                    {{end}}
+                                </div>
+                            </div>
+                        </a>
+                    {{else if $oDynamic.major.article}}
+                        <div class="title" style="font-size:18px;">{{$oDynamic.major.article.title}}</div>
+                    {{end}}
+                {{end}}
+                
+                <!-- 原动态文本 -->
+                <div class="content">
+                    {{- if $oDynamic.topic -}}
+                        {{- if $oDynamic.topic.name -}}
+                        <span class="bili-link" style="display:inline-flex; align-items:center; gap: 4px; font-weight: bold; margin-right: 4px;">
+                            <svg viewBox="0 0 16 16" style="width: 14px; height: 14px; fill: currentColor; margin-bottom: -2px;"><path d="M5.1911266666666664 0.9880383333333334C4.908345 1.1859883333333332 4.839576666666666 1.5756933333333332 5.0375266666666665 1.8584683333333332L6.109626666666665 3.3900216666666663C6.307576666666667 3.6728033333333334 6.697288333333333 3.7415716666666663 6.980041666666667 3.5436216666666667C7.26285 3.345673333333333 7.3316 2.955966666666666 7.133666666666667 2.6731916666666664L6.061558333333332 1.1416383333333333C5.863613333333333 0.8588566666666666 5.473901666666667 0.7900883333333333 5.1911266666666664 0.9880383333333334z" fill="currentColor"></path><path d="M10.808908333333331 0.9880316666666666C10.52615 0.7900883333333333 10.136408333333332 0.8588566666666666 9.938466666666667 1.1416383333333333L8.866399999999999 2.6731916666666664C8.668458333333334 2.9559716666666667 8.737216666666665 3.345678333333333 9.020024999999999 3.543628333333333C9.302775 3.7415716666666663 9.692466666666666 3.6728033333333334 9.890458333333333 3.3900216666666663L10.962533333333333 1.8584683333333332C11.160466666666665 1.5756883333333334 11.091716666666665 1.1859816666666667 10.808908333333331 0.9880316666666666z" fill="currentColor"></path><path d="M8.388033333333333 8.2152L8.548749999999998 7.036716666666667L7.611974999999999 7.036716666666667L7.45125 8.2152L8.388033333333333 8.2152z" fill="currentColor"></path><path d="M8 2.559733333333333C6.498214999999999 2.559733333333333 5.16768 2.6184066666666665 4.195425 2.678813333333333C2.923148333333333 2.75786 1.9012316666666664 3.7431133333333335 1.8069283333333335 5.026566666666666C1.7538833333333335 5.748475 1.7082533333333334 6.652113333333333 1.7082533333333334 7.626266666666666C1.7082533333333334 8.604275 1.75425 9.504349999999999 1.8075966666666665 10.219908333333333C1.9018333333333333 11.483925 2.899678333333333 12.460316666666666 4.154273333333333 12.551708333333332C5.104525 12.620916666666668 6.4048050000000005 12.688916666666666 7.876416666666666 12.692558333333332C8.379624999999999 13.169883333333333 9.433408333333333 14.084808333333331 10.662975 14.643741666666665C11.005616666666665 14.799541666666666 11.427091666666666 14.859316666666667 11.735999999999999 14.576575C12.039016666666665 14.299274999999998 12.024899999999999 13.881124999999999 11.919241666666666 13.523958333333333C11.811016666666664 13.158316666666666 11.757858333333333 12.821666666666667 11.73155 12.559758333333335C13.013916666666667 12.468349999999997 14.093808333333332 11.543458333333334 14.192449999999997 10.220175C14.245791666666666 9.504874999999998 14.291733333333333 8.604875 14.291733333333333 7.626266666666666C14.291733333333333 6.6514999999999995 14.246125 5.74798 14.193108333333331 5.026299999999999C14.098808333333332 3.7429283333333334 13.076958333333332 2.757873333333333 11.804816666666664 2.6788266666666662C10.832533333333332 2.6184133333333333 9.501883333333334 2.559733333333333 8 2.559733333333333zM6.536343333333332 10.730624999999998C6.226251666666666 10.688316666666665 6.009155 10.402649999999998 6.0514399999999995 10.092558333333333L6.152898333333334 9.348533333333332L5.457055 9.348533333333332C5.144096666666666 9.348533333333332 4.890388333333333 9.094850000000001 4.890388333333333 8.781866666666666C4.890388333333333 8.468933333333332 5.144096666666666 8.2152 5.457055 8.2152L6.307441666666667 8.2152L6.468145 7.036716666666667L5.457055 7.036716666666667C5.144096666666666 7.036716666666667 4.890388333333333 6.783036666666668 4.890388333333333 6.470073333333333C4.890388333333333 6.15711 5.144096666666666 5.903406666666666 5.457055 5.903406666666666L6.6226883333333335 5.903406666666666L6.744933333333333 5.006731666666666C6.787241666666667 4.6966399999999995 7.0729083333333325 4.479536666666666 7.383 4.521823333333333C7.693091666666666 4.564108333333333 7.910191666666667 4.849765 7.867875 5.159858333333333L7.766483333333333 5.903406666666666L8.703325 5.903406666666666L8.825558333333333 5.006731666666666C8.867866666666666 4.6966399999999995 9.153533333333332 4.479536666666666 9.463625 4.521823333333333C9.773716666666667 4.564108333333333 9.990816666666666 4.849765 9.948508333333333 5.159858333333333L9.847116666666667 5.903406666666666L10.542933333333332 5.903406666666666C10.855858333333332 5.903406666666666 11.1096 6.15711 11.1096 6.470073333333333C11.1096 6.783036666666668 10.855858333333332 7.036716666666667 10.542933333333332 7.036716666666667L9.692599999999999 7.036716666666667L9.531875 8.2152L10.542933333333332 8.2152C10.855858333333332 8.2152 11.1096 8.468933333333332 11.1096 8.781866666666666C11.1096 9.094850000000001 10.855858333333332 9.348533333333332 10.542933333333332 9.348533333333332L9.377308333333332 9.348533333333332L9.255008333333333 10.245691666666666C9.212691666666666 10.555783333333332 8.927033333333332 10.772874999999999 8.616941666666666 10.730624999999998C8.306849999999999 10.688316666666665 8.089749999999999 10.402649999999998 8.132058333333333 10.092558333333333L8.233516666666667 9.348533333333332L7.296741666666667 9.348533333333332L7.1743749999999995 10.245691666666666C7.132066666666667 10.555783333333332 6.846406666666667 10.772874999999999 6.536343333333332 10.730624999999998z"></path></svg>
+                            <span>{{$oDynamic.topic.name}}</span>
+                        </span>
+                        {{- end -}}
+                    {{- end -}}
+                    {{- if $oDynamic.desc -}}
+                        {{- if $oDynamic.desc.rich_text_nodes -}}
+                            {{- range $node := $oDynamic.desc.rich_text_nodes -}}
+                                {{- if eq $node.type "RICH_TEXT_NODE_TYPE_TEXT" -}}
+                                    <span>{{$node.text}}</span>
+                                {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_AT" -}}
+                                    <span class="bili-rich-text-module at bili-link" data-oid="{{$node.rid}}">@{{$node.text}}</span>
+                                {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_TOPIC" -}}
+                                    <span class="bili-link" style="display:inline-flex; align-items:center; gap: 4px;">
+                                        <svg viewBox="0 0 16 16" style="width: 14px; height: 14px; fill: currentColor; margin-bottom: -2px;"><path d="M5.1911266666666664 0.9880383333333334C4.908345 1.1859883333333332 4.839576666666666 1.5756933333333332 5.0375266666666665 1.8584683333333332L6.109626666666665 3.3900216666666663C6.307576666666667 3.6728033333333334 6.697288333333333 3.7415716666666663 6.980041666666667 3.5436216666666667C7.26285 3.345673333333333 7.3316 2.955966666666666 7.133666666666667 2.6731916666666664L6.061558333333332 1.1416383333333333C5.863613333333333 0.8588566666666666 5.473901666666667 0.7900883333333333 5.1911266666666664 0.9880383333333334z" fill="currentColor"></path><path d="M10.808908333333331 0.9880316666666666C10.52615 0.7900883333333333 10.136408333333332 0.8588566666666666 9.938466666666667 1.1416383333333333L8.866399999999999 2.6731916666666664C8.668458333333334 2.9559716666666667 8.737216666666665 3.345678333333333 9.020024999999999 3.543628333333333C9.302775 3.7415716666666663 9.692466666666666 3.6728033333333334 9.890458333333333 3.3900216666666663L10.962533333333333 1.8584683333333332C11.160466666666665 1.5756883333333334 11.091716666666665 1.1859816666666667 10.808908333333331 0.9880316666666666z" fill="currentColor"></path><path d="M8.388033333333333 8.2152L8.548749999999998 7.036716666666667L7.611974999999999 7.036716666666667L7.45125 8.2152L8.388033333333333 8.2152z" fill="currentColor"></path><path d="M8 2.559733333333333C6.498214999999999 2.559733333333333 5.16768 2.6184066666666665 4.195425 2.678813333333333C2.923148333333333 2.75786 1.9012316666666664 3.7431133333333335 1.8069283333333335 5.026566666666666C1.7538833333333335 5.748475 1.7082533333333334 6.652113333333333 1.7082533333333334 7.626266666666666C1.7082533333333334 8.604275 1.75425 9.504349999999999 1.8075966666666665 10.219908333333333C1.9018333333333333 11.483925 2.899678333333333 12.460316666666666 4.154273333333333 12.551708333333332C5.104525 12.620916666666668 6.4048050000000005 12.688916666666666 7.876416666666666 12.692558333333332C8.379624999999999 13.169883333333333 9.433408333333333 14.084808333333331 10.662975 14.643741666666665C11.005616666666665 14.799541666666666 11.427091666666666 14.859316666666667 11.735999999999999 14.576575C12.039016666666665 14.299274999999998 12.024899999999999 13.881124999999999 11.919241666666666 13.523958333333333C11.811016666666664 13.158316666666666 11.757858333333333 12.821666666666667 11.73155 12.559758333333335C13.013916666666667 12.468349999999997 14.093808333333332 11.543458333333334 14.192449999999997 10.220175C14.245791666666666 9.504874999999998 14.291733333333333 8.604875 14.291733333333333 7.626266666666666C14.291733333333333 6.6514999999999995 14.246125 5.74798 14.193108333333331 5.026299999999999C14.098808333333332 3.7429283333333334 13.076958333333332 2.757873333333333 11.804816666666664 2.6788266666666662C10.832533333333332 2.6184133333333333 9.501883333333334 2.559733333333333 8 2.559733333333333zM6.536343333333332 10.730624999999998C6.226251666666666 10.688316666666665 6.009155 10.402649999999998 6.0514399999999995 10.092558333333333L6.152898333333334 9.348533333333332L5.457055 9.348533333333332C5.144096666666666 9.348533333333332 4.890388333333333 9.094850000000001 4.890388333333333 8.781866666666666C4.890388333333333 8.468933333333332 5.144096666666666 8.2152 5.457055 8.2152L6.307441666666667 8.2152L6.468145 7.036716666666667L5.457055 7.036716666666667C5.144096666666666 7.036716666666667 4.890388333333333 6.783036666666668 4.890388333333333 6.470073333333333C4.890388333333333 6.15711 5.144096666666666 5.903406666666666 5.457055 5.903406666666666L6.6226883333333335 5.903406666666666L6.744933333333333 5.006731666666666C6.787241666666667 4.6966399999999995 7.0729083333333325 4.479536666666666 7.383 4.521823333333333C7.693091666666666 4.564108333333333 7.910191666666667 4.849765 7.867875 5.159858333333333L7.766483333333333 5.903406666666666L8.703325 5.903406666666666L8.825558333333333 5.006731666666666C8.867866666666666 4.6966399999999995 9.153533333333332 4.479536666666666 9.463625 4.521823333333333C9.773716666666667 4.564108333333333 9.990816666666666 4.849765 9.948508333333333 5.159858333333333L9.847116666666667 5.903406666666666L10.542933333333332 5.903406666666666C10.855858333333332 5.903406666666666 11.1096 6.15711 11.1096 6.470073333333333C11.1096 6.783036666666668 10.855858333333332 7.036716666666667 10.542933333333332 7.036716666666667L9.692599999999999 7.036716666666667L9.531875 8.2152L10.542933333333332 8.2152C10.855858333333332 8.2152 11.1096 8.468933333333332 11.1096 8.781866666666666C11.1096 9.094850000000001 10.855858333333332 9.348533333333332 10.542933333333332 9.348533333333332L9.377308333333332 9.348533333333332L9.255008333333333 10.245691666666666C9.212691666666666 10.555783333333332 8.927033333333332 10.772874999999999 8.616941666666666 10.730624999999998C8.306849999999999 10.688316666666665 8.089749999999999 10.402649999999998 8.132058333333333 10.092558333333333L8.233516666666667 9.348533333333332L7.296741666666667 9.348533333333332L7.1743749999999995 10.245691666666666C7.132066666666667 10.555783333333332 6.846406666666667 10.772874999999999 6.536343333333332 10.730624999999998z"></path></svg>
+                                        <span>{{$node.text}}</span>
+                                    </span>
+                                {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_VOTE" -}}
+                                    <span class="bili-link" style="display:inline-flex; align-items:center; gap: 4px;">
+                                        <svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 23 23"><path d="M1.9166666666666667 13.657304166666666C1.9166666666666667 12.334133333333334 2.9893195833333333 11.261470833333332 4.3125 11.261470833333332L5.270833333333334 11.261470833333332C6.59401375 11.261470833333332 7.666666666666667 12.334133333333334 7.666666666666667 13.657304166666666L7.666666666666667 17.011470833333334C7.666666666666667 18.334641666666666 6.59401375 19.40730416666667 5.270833333333334 19.40730416666667L4.3125 19.40730416666667C2.9893195833333333 19.40730416666667 1.9166666666666667 18.334641666666666 1.9166666666666667 17.011470833333334L1.9166666666666667 13.657304166666666zM4.3125 12.698970833333332C3.7832316666666665 12.698970833333332 3.354166666666667 13.128016666666667 3.354166666666667 13.657304166666666L3.354166666666667 17.011470833333334C3.354166666666667 17.540758333333333 3.7832316666666665 17.96980416666667 4.3125 17.96980416666667L5.270833333333334 17.96980416666667C5.8001112500000005 17.96980416666667 6.229166666666667 17.540758333333333 6.229166666666667 17.011470833333334L6.229166666666667 13.657304166666666C6.229166666666667 13.128016666666667 5.8001112500000005 12.698970833333332 5.270833333333334 12.698970833333332L4.3125 12.698970833333332z" fill="currentColor"></path><path d="M8.625 5.511355833333334C8.625 4.188175416666667 9.697672083333334 3.1155225000000004 11.020833333333334 3.1155225000000004L11.979166666666668 3.1155225000000004C13.3023375 3.1155225000000004 14.375 4.188175416666667 14.375 5.511355833333334L14.375 17.011375C14.375 18.334545833333333 13.3023375 19.407208333333337 11.979166666666668 19.407208333333337L11.020833333333334 19.407208333333337C9.697672083333334 19.407208333333337 8.625 18.334545833333333 8.625 17.011375L8.625 5.511355833333334zM11.020833333333334 4.5530225C10.491545833333333 4.5530225 10.0625 4.982077916666667 10.0625 5.511355833333334L10.0625 17.011375C10.0625 17.540614583333333 10.491545833333333 17.969708333333337 11.020833333333334 17.969708333333337L11.979166666666668 17.969708333333337C12.508454166666668 17.969708333333337 12.9375 17.540614583333333 12.9375 17.011375L12.9375 5.511355833333334C12.9375 4.982077916666667 12.508454166666668 4.5530225 11.979166666666668 4.5530225L11.020833333333334 4.5530225z" fill="currentColor"></path><path d="M15.333333333333334 10.542625C15.333333333333334 9.219425416666667 16.405995833333332 8.1467725 17.729166666666668 8.1467725L18.6875 8.1467725C20.010670833333336 8.1467725 21.083333333333336 9.219425416666667 21.083333333333336 10.542625L21.083333333333336 17.011375C21.083333333333336 18.334545833333333 20.010670833333336 19.407208333333337 18.6875 19.407208333333337L17.729166666666668 19.407208333333337C16.405995833333332 19.407208333333337 15.333333333333334 18.334545833333333 15.333333333333334 17.011375L15.333333333333334 10.542625zM17.729166666666668 9.584282083333333C17.19987916666667 9.584282083333333 16.770833333333336 10.0133375 16.770833333333336 10.542625L16.770833333333336 17.011375C16.770833333333336 17.540614583333333 17.19987916666667 17.969708333333337 17.729166666666668 17.969708333333337L18.6875 17.969708333333337C19.2167875 17.969708333333337 19.645833333333336 17.540614583333333 19.645833333333336 17.011375L19.645833333333336 10.542625C19.645833333333336 10.0133375 19.2167875 9.584282083333333 18.6875 9.584282083333333L17.729166666666668 9.584282083333333z" fill="currentColor"></path></svg>
+                                        <span>{{$node.text}}</span>
+                                    </span>
+                                {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_EMOJI" -}}{{- if $node.emoji -}}<img class="bili-emoji" src="{{$node.emoji.icon_url}}" />{{- end -}}
+                                {{- else if eq $node.type "RICH_TEXT_NODE_TYPE_WEB" -}}<a class="opus-text-rich-hl link bili-link" href="{{if $node.jump_url}}{{$node.jump_url}}{{else}}#{{end}}" target="_blank"><svg style="width: 14px; height: 14px; fill: currentColor; margin-bottom: -2px;" viewBox="0 0 1024 1024"><path d="M574 665.4a8.03 8.03 0 0 0-11.3 0L446.5 782.2c-53.8 53.8-144.6 59.5-204 0-59.5-59.5-53.8-144.6 0-204l116.2-116.2c3.1-3.1 3.1-8.2 0-11.3l-39.8-39.8a8.03 8.03 0 0 0-11.3 0L191.4 527.1c-96.9 96.9-96.9 253.9 0 350.8 96.9 96.9 253.9 96.9 350.8 0l116.2-116.2c3.1-3.1 3.1-8.2 0-11.3L618.6 710.6a8.03 8.03 0 0 0 0-11.3L574 665.4zm258.6-474c-96.9-96.9-253.9-96.9-350.8 0L365.6 307.6a8.03 8.03 0 0 0 0 11.3l39.8 39.8c3.1 3.1 8.2 3.1 11.3 0l116.2-116.2c53.8-53.8 144.6-59.5 204 0 59.5 59.5 53.8 144.6 0 204L620.7 562.7a8.03 8.03 0 0 0 0 11.3l39.8 39.8c3.1 3.1 8.2 3.1 11.3 0l116.2-116.2c96.9-96.9 96.9-253.9 0-350.8z"/><path d="M358.5 617.9a8.03 8.03 0 0 0 11.3 0l295.7-295.7c3.1-3.1 3.1-8.2 0-11.3l-39.8-39.8a8.03 8.03 0 0 0-11.3 0L318.7 566.8a8.03 8.03 0 0 0 0 11.3l39.8 39.8z"/></svg> 网页链接</a>
+                                {{- else -}}
+                                    <span>{{$node.text}}</span>
+                                {{- end -}}
+                            {{- end -}}
+                        {{- else -}}
+                            <span>{{$oDynamic.desc.text}}</span>
+                        {{- end -}}
+                    {{- end -}}
+                </div>
+                
+                <!-- 原动态图片 -->
+                {{if $oDynamic.major}}
+                    {{if $oDynamic.major.draw}}
+                        {{if $oDynamic.major.draw.items}}
+                        {{if $.Expand}}
+                        <div class="image-grid expand-img">
+                            {{range $pic := $oDynamic.major.draw.items}}
+                                <img src="{{$pic.src}}" />
+                            {{end}}
+                        </div>
+                        {{else}}
+                        <div class="image-grid {{if eq (len $oDynamic.major.draw.items) 1}}single-img{{end}}">
+                            {{range $index, $pic := $oDynamic.major.draw.items}}
+                                {{if lt $index 9}}
+                                <img src="{{$pic.src}}@400w_400h_1c.webp" />
+                                {{end}}
+                            {{end}}
+                        </div>
+                        {{end}}
+                        {{end}}
+                    {{end}}
+                {{end}}
+
+                <!-- 原动态附加卡片 -->
+                {{if $oDynamic.additional}}
+                    {{if $oDynamic.additional.vote}}
+                    {{$oVote := $oDynamic.additional.vote}}
+                    <div class="vote-box">
+                        <div class="vote-desc">📊 {{$oVote.desc}}</div>
+                        {{if $oVote.options}}
+                            {{range $opt := $oVote.options}}
+                            <div class="vote-option">
+                                <div class="vote-progress" style="width: 0%;"></div>
+                                <span class="vote-opt-desc">{{$opt.opt_desc}}</span>
+                                <span class="vote-opt-pct">{{if $opt.cnt}}{{$opt.cnt}} 票{{end}}</span>
+                            </div>
+                            {{end}}
+                        {{end}}
+                        <div class="vote-meta">{{if $oVote.join_num}}{{$oVote.join_num}} 人参与{{end}}</div>
+                    </div>
+                    {{end}}
+
+                    {{if $oDynamic.additional.reserve}}
+                    {{$res := $oDynamic.additional.reserve}}
+                    <div class="reserve-box">
+                        <div class="reserve-info">
+                            <div class="reserve-title">📅 {{$res.title}}</div>
+                            <div class="reserve-desc">
+                                {{if $res.desc1}}{{$res.desc1.text}}{{end}}
+                                {{if $res.desc2}} | {{$res.desc2.text}}{{end}}
+                            </div>
+                        </div>
+                        <div class="reserve-btn">预约</div>
+                    </div>
+                    {{end}}
+                {{end}}
+            </div>
+            {{end}}
+        {{end}}
+        
+    </div>
+    {{end}}
+</body>
+</html>
